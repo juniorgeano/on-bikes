@@ -62,7 +62,7 @@ app.set('view engine', 'ejs');
 
 
 let redisClient = redis.createClient({
-	host: 'localhost',
+	host: '31.220.109.90',
 	port: 6379
 });
 
