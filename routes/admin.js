@@ -12,22 +12,7 @@ module.exports = function(io){
 	
 	moment.locale('pt-BR');
 
-	//criando um middleware para autenticar o usuário
-	router.use(function(req, res, next){
-		
-		
-			next();
-		
-		
-	});
-
-	router.use(function(req, res, next){
-		
-		req.menus = admin.getMenus(req);
-		
-		next();
-		
-	});
+	
 
 	router.get('/logout', function(req, res, next){
 		
