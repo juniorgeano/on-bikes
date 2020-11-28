@@ -15,9 +15,11 @@ module.exports = function(io){
 	//criando um middleware para autenticar o usuário
 	router.use(function(req, res, next){
 		
-		
+		if (['/login'].indexOf(req.url) === -1) {
+			res.redirect('/admin/login');
+		} else {
 			next();
-		
+		}
 		
 	});
 
@@ -30,8 +32,6 @@ module.exports = function(io){
 	});
 
 	router.get('/logout', function(req, res, next){
-		
-		delete req.session.user;
 		
 		res.redirect('/admin/login');
 		
@@ -79,8 +79,6 @@ module.exports = function(io){
 		} else {
 			
 			users.login(req.body.email, req.body.password).then(user=>{
-				
-				req.session.user = user;
 				
 				res.redirect('/admin');
 				

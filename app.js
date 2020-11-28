@@ -3,9 +3,6 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-var redis = require('redis');
-var session = require('express-session');
-var RedisStore = require('connect-redis')(session);
 var formidable = require('formidable');
 var http = require('http');
 var socket = require('socket.io');
@@ -59,22 +56,6 @@ app.use(function(req, res, next){
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
-
-
-let redisClient = redis.createClient({
-	host: '31.220.109.90',
-	port: 6379
-});
-
-app.use(session({
-	store: new RedisStore({
-		client: redisClient
-	}),
-	secret: 'shiriyuki91@',
-	resave: true,
-	saveUninitialized: true
-}));
-
 
 app.use(logger('dev'));
 //app.use(express.json());
