@@ -52,31 +52,6 @@ var adminRouter = require('./routes/admin')(io);
 });
 
 
-/*app.use(function(req,res,next){
-  
-  let content_type = req.headers["content-type"]
-  
-  if (req.method === 'POST' && content_type.indexOf('multipart/form-data;') > -1) {
- 
-    console.log('--------------------------------------------------------')
-    console.log(content_type)
- 
-        var form = formidable.IncomingForm({
-            uploadDir: path.join( __dirname, "/public/images"),
-            keepExtensions: true
-        })
- 
-        form.parse(req, function(err,fields,files){
-            req.fields = fields
-            req.files = files
- 
-            next()
-        })
-  } else {
-        next()
-    }
-})
-*/
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
