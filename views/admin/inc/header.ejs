@@ -22,7 +22,7 @@
     <header class="main-header">
 
       <!-- Logo -->
-      <a href="index.html" class="logo">
+      <a href="/admin" class="logo">
         <!-- mini logo for sidebar mini 50x50 pixels -->
         <span class="logo-mini">HCODE</span>
         <!-- logo for regular state and mobile devices -->
@@ -45,7 +45,7 @@
                 <!-- The user image in the navbar-->
                 <img src="dist/img/avatar5.png" class="user-image" alt="User Image">
                 <!-- hidden-xs hides the username on small devices so only the image appears. -->
-                <span class="hidden-xs"><%= data.name%></span>
+                <span class="hidden-xs"><%= data.name %></span>
               </a>
               <ul class="dropdown-menu">
                 <!-- The user image in the menu -->
@@ -53,8 +53,8 @@
                   <img src="dist/img/avatar5.png" class="img-circle" alt="User Image">
 
                   <p>
-                    <%= data.name%>
-                    <small><%= data.email%></small>
+                    <%= data.name %>
+                    <small><%= data.email %></small>
                   </p>
                 </li>
                 <!-- Menu Footer-->
@@ -72,38 +72,3 @@
         </div>
       </nav>
     </header>
-    <!-- Left side column. contains the logo and sidebar -->
-    <aside class="main-sidebar">
-
-      <!-- sidebar: style can be found in sidebar.less -->
-      <section class="sidebar">
-
-        <!-- Sidebar user panel (optional) -->
-        <div class="user-panel">
-          <div class="pull-left image">
-            <img src="dist/img/avatar5.png" class="img-circle" alt="User Image">
-          </div>
-          <div class="pull-left info">
-            <p><%= data.name%></p>
-            <!-- Status -->
-            <a href="#"><i class="fa fa-circle text-success"></i> Online</a>
-          </div>
-        </div>
-
-        <!-- Sidebar Menu -->
-        <ul class="sidebar-menu" data-widget="tree">
-          <li class="header">MENU</li>
-          <!-- Optionally, you can add icons to the links -->
-          <% menus.forEach(function(menu){ %>
-          <li <% if(menu.active) {%>class="active"<% } %>>
-            <a href="<%= menu.href %>">
-              <i class="fa fa-<%= menu.icon %>"></i>
-              <span><%= menu.text %></span>
-            </a>
-          </li>
-          <% }); %>
-        </ul>
-        <!-- /.sidebar-menu -->
-      </section>
-      <!-- /.sidebar -->
-    </aside>

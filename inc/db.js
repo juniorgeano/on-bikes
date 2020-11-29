@@ -14,16 +14,6 @@ const connection = mysql.createPool({
   queueLimit: 0
   });
 
-
-/*
-  const connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    database: 'onbikes',
-    multipleStatements: true
-    });
-*/
-
   module.exports = connection;
 
 
