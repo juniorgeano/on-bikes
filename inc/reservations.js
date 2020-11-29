@@ -1,5 +1,5 @@
 var conn = require("./db");
-var Pagination = require("./../inc/Pagination")
+var Pagination = require('./pagination');
 var moment = require("moment");
 
 module.exports = {
