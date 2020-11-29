@@ -5,6 +5,7 @@ var menus = require("./../inc/menus");
 var reservations = require("./../inc/reservations")
 var contacts = require("./../inc/contacts.js")
 var emails = require("./../inc/emails")
+var clientes = require("./../inc/clients")
 var moment = require("moment");
 var router = express.Router();
 
@@ -16,10 +17,8 @@ module.exports = function(io){
 
     router.use(function(req, res, next){
 
-       
             next();
-        
-    
+
     });
     
     router.use(function(req, res, next) {
@@ -31,8 +30,6 @@ module.exports = function(io){
     });
     
     router.get("/logout", function(req, res, next) {
-    
-        //delete req.session.user
     
         res.redirect("/admin/login");
     
@@ -285,6 +282,82 @@ module.exports = function(io){
         });
     
     });
+
+
+
+
+
+
+
+
+
+
+
+    router.get("/clientes", function(req, res, next) {
+    
+        let start = (req.query.start) ? req.query.start : moment().subtract(1, "year").format("YYYY-MM-DD");
+        let end = (req.query.end) ? req.query.end : moment().format("YYYY-MM-DD");
+    
+        clientes.getClientes(req).then(pag => {
+    
+            res.render("admin/clientes", admin.getParams(req, {
+                date: {
+                    start,
+                    end
+                },
+                data: pag.data,
+                moment,
+                links: pag.links
+            }));
+    
+        });
+    
+    });
+    
+    router.get("/clientes/chart", function(req, res, next){
+    
+        req.query.start = (req.query.start) ? req.query.start : moment().subtract(1, "year").format("YYYY-MM-DD");
+        req.query.end = (req.query.end) ? req.query.end : moment().format("YYYY-MM-DD");
+    
+        clientes.chart(req).then(chartData=>{
+    
+            res.send(chartData);
+    
+        });
+    
+    });
+    
+    router.post("/clientes", function(req, res, next) {
+    
+        clientes.save(req.fields, req.files).then(results =>{
+            io.emit('dashboard update');
+            res.send(results);
+        }).catch(err => {
+            res.send(err);
+        })
+    
+    });
+    
+    router.delete("/clientes/:id", function (req, res, next) {
+    
+        clientes.delete(req.params.id).then(results=>{
+            io.emit('dashboard update');
+            res.send(results);
+    
+        }).catch(err=>{
+    
+            res.send(err);
+    
+        });
+    
+    });
+
+
+
+
+
+
+
 
     return router;
 
