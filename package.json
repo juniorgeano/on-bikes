@@ -1,12 +1,11 @@
 {
-  "name": "saboroso",
+  "name": "on-bikes",
   "version": "0.0.0",
   "private": true,
   "scripts": {
     "start": "node app.js"
   },
   "dependencies": {
-    "connect-redis": "^3.4.1",
     "cookie-parser": "~1.4.4",
     "debug": "~2.6.9",
     "ejs": "~2.6.1",
