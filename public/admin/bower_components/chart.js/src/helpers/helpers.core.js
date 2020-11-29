@@ -1,9 +1,5 @@
 'use strict';
 
-function isValidKey(key) {
-	return ['__proto__', 'prototype', 'constructor'].indexOf(key) === -1;
-}
-
 /**
  * @namespace Chart.helpers
  */
@@ -179,7 +175,7 @@ var helpers = {
 		}
 
 		if (helpers.isObject(source)) {
-			var target = Object.create(source);
+			var target = {};
 			var keys = Object.keys(source);
 			var klen = keys.length;
 			var k = 0;
@@ -200,12 +196,6 @@ var helpers = {
 	 * @private
 	 */
 	_merger: function(key, target, source, options) {
-		if (!isValidKey(key)) {
-			// We want to ensure we do not copy prototypes over
-			// as this can pollute global namespaces
-			return;
-		}
-
 		var tval = target[key];
 		var sval = source[key];
 
@@ -221,12 +211,6 @@ var helpers = {
 	 * @private
 	 */
 	_mergerIf: function(key, target, source) {
-		if (!isValidKey(key)) {
-			// We want to ensure we do not copy prototypes over
-			// as this can pollute global namespaces
-			return;
-		}
-
 		var tval = target[key];
 		var sval = source[key];
 
@@ -291,12 +275,14 @@ var helpers = {
 	 * @param {object} argN - Additional objects containing properties to merge in target.
 	 * @returns {object} The `target` object.
 	 */
-	extend: Object.assign || function(target) {
-		return helpers.merge(target, [].slice.call(arguments, 1), {
-			merger: function(key, dst, src) {
-				dst[key] = src[key];
-			}
-		});
+	extend: function(target) {
+		var setFn = function(value, key) {
+			target[key] = value;
+		};
+		for (var i = 1, ilen = arguments.length; i < ilen; ++i) {
+			helpers.each(arguments[i], setFn);
+		}
+		return target;
 	},
 
 	/**
@@ -322,13 +308,6 @@ var helpers = {
 
 		ChartElement.__super__ = me.prototype;
 		return ChartElement;
-	},
-
-	_deprecated: function(scope, value, previous, current) {
-		if (value !== undefined) {
-			console.warn(scope + ': "' + previous +
-				'" is deprecated. Please use "' + current + '" instead');
-		}
 	}
 };
 

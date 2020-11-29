@@ -21,6 +21,8 @@ defaults._set('scatter', {
 		}]
 	},
 
+	showLines: false,
+
 	tooltips: {
 		callbacks: {
 			title: function() {
@@ -29,14 +31,6 @@ defaults._set('scatter', {
 			label: function(item) {
 				return '(' + item.xLabel + ', ' + item.yLabel + ')';
 			}
-		}
-	}
-});
-
-defaults._set('global', {
-	datasets: {
-		scatter: {
-			showLine: false
 		}
 	}
 });

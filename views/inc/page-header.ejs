@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html>
 
-<%- include('head') -%>
+<%- include("head.ejs") -%>
 
 <body>
 
@@ -9,10 +9,10 @@
 
 	<div id="page">
 
-        <%- include('header-menu'); -%>
-        
-        <% if (typeof isHome === 'boolean' && isHome) { %>
-            <%- include('header-index'); -%>
-        <% } else { %>
-            <%- include('header'); -%>
-        <% } %>
+    <%- include("header-menu") -%>
+
+    <% if (typeof isHome === 'boolean' && isHome) { %>
+        <%- include("header-index") -%>
+    <% } else { %>
+        <%- include("header") -%>
+    <% } %>

@@ -77,7 +77,6 @@ the color of the bars is generally set this way.
 | [`hoverBorderColor`](#interactions) | [`Color`](../general/colors.md) | - | Yes | `undefined`
 | [`hoverBorderWidth`](#interactions) | `number` | - | Yes | `1`
 | [`label`](#general) | `string` | - | - | `''`
-| [`order`](#general) | `number` | - | - | `0`
 | [`xAxisID`](#general) | `string` | - | - | first x axis
 | [`yAxisID`](#general) | `string` | - | - | first y axis
 
@@ -86,7 +85,6 @@ the color of the bars is generally set this way.
 | Name | Description
 | ---- | ----
 | `label` | The label for the dataset which appears in the legend and tooltips.
-| `order` | The drawing order of dataset. Also affects order for stacking, tooltip, and legend.
 | `xAxisID` | The ID of the x axis to plot this dataset on.
 | `yAxisID` | The ID of the y axis to plot this dataset on.
 
@@ -134,8 +132,8 @@ The interaction with each bar can be controlled with the following properties:
 
 All these values, if `undefined`, fallback to the associated [`elements.rectangle.*`](../configuration/elements.md#rectangle-configuration) options.
 
-## Dataset Configuration
-The bar chart accepts the following configuration from the associated dataset options:
+## Scale Configuration
+The bar chart accepts the following configuration from the associated `scale` options:
 
 | Name | Type | Default | Description
 | ---- | ---- | ------- | -----------
@@ -144,33 +142,6 @@ The bar chart accepts the following configuration from the associated dataset op
 | `barThickness` | <code>number&#124;string</code> | | Manually set width of each bar in pixels. If set to `'flex'`, it computes "optimal" sample widths that globally arrange bars side by side. If not set (default), bars are equally sized based on the smallest interval. [more...](#barthickness)
 | `maxBarThickness` | `number` | | Set this to ensure that bars are not sized thicker than this.
 | `minBarLength` | `number` | | Set this to ensure that bars have a minimum length in pixels.
-
-### Example Usage
-
-```javascript
-data: {
-    datasets: [{
-        barPercentage: 0.5,
-        barThickness: 6,
-        maxBarThickness: 8,
-        minBarLength: 2,
-        data: [10, 20, 30, 40, 50, 60, 70]
-    }]
-};
-```
-### barThickness
-If this value is a number, it is applied to the width of each bar, in pixels. When this is enforced, `barPercentage` and `categoryPercentage` are ignored.
-
-If set to `'flex'`, the base sample widths are calculated automatically based on the previous and following samples so that they take the full available widths without overlap. Then, bars are sized using `barPercentage` and `categoryPercentage`. There is no gap when the percentage options are 1. This mode generates bars with different widths when data are not evenly spaced.
-
-If not set (default), the base sample widths are calculated using the smallest interval that prevents bar overlapping, and bars are sized using `barPercentage` and `categoryPercentage`. This mode always generates bars equally sized.
-
-## Scale Configuration
-The bar chart sets unique default values for the following configuration from the associated `scale` options:
-
-| Name | Type | Default | Description
-| ---- | ---- | ------- | -----------
-| `offset` | `boolean` | `true` | If true, extra space is added to the both edges and the axis is scaled to fit into the chart area.
 | `gridLines.offsetGridLines` | `boolean` | `true` | If true, the bars for a particular data point fall between the grid lines. The grid line will move to the left by one half of the tick interval. If false, the grid line will go right down the middle of the bars. [more...](#offsetgridlines)
 
 ### Example Usage
@@ -179,6 +150,10 @@ The bar chart sets unique default values for the following configuration from th
 options = {
     scales: {
         xAxes: [{
+            barPercentage: 0.5,
+            barThickness: 6,
+            maxBarThickness: 8,
+            minBarLength: 2,
             gridLines: {
                 offsetGridLines: true
             }
@@ -186,6 +161,12 @@ options = {
     }
 };
 ```
+### barThickness
+If this value is a number, it is applied to the width of each bar, in pixels. When this is enforced, `barPercentage` and `categoryPercentage` are ignored.
+
+If set to `'flex'`, the base sample widths are calculated automatically based on the previous and following samples so that they take the full available widths without overlap. Then, bars are sized using `barPercentage` and `categoryPercentage`. There is no gap when the percentage options are 1. This mode generates bars with different widths when data are not evenly spaced.
+
+If not set (default), the base sample widths are calculated using the smallest interval that prevents bar overlapping, and bars are sized using `barPercentage` and `categoryPercentage`. This mode always generates bars equally sized.
 
 ### offsetGridLines
 If true, the bars for a particular data point fall between the grid lines. The grid line will move to the left by one half of the tick interval, which is the space between the grid lines. If false, the grid line will go right down the middle of the bars. This is set to true for a category scale in a bar chart while false for other scales or chart types by default.
@@ -230,11 +211,6 @@ You can also specify the dataset as x/y coordinates when using the [time scale](
 
 ```javascript
 data: [{x:'2016-12-25', y:20}, {x:'2016-12-26', y:10}]
-```
-
-You can also specify the dataset for a bar chart as arrays of two numbers. This will force rendering of bars with gaps between them (floating-bars). First and second numbers in array will correspond the start and the end point of a bar respectively.
-```javascript
-data: [[5,6], [-3,-6]]
 ```
 
 ## Stacked Bar Chart

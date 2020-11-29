@@ -59,7 +59,7 @@ define([
 
     container.on('focus', function (evt) {
       if (!container.isOpen()) {
-        self.$selection.trigger('focus');
+        self.$selection.focus();
       }
     });
   };
@@ -93,14 +93,7 @@ define([
     var formatted = this.display(selection, $rendered);
 
     $rendered.empty().append(formatted);
-
-    var title = selection.title || selection.text;
-
-    if (title) {
-      $rendered.attr('title', title);
-    } else {
-      $rendered.removeAttr('title');
-    }
+    $rendered.attr('title', selection.title || selection.text);
   };
 
   return SingleSelection;

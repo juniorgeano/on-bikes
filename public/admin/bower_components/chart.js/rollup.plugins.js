@@ -95,11 +95,9 @@ function stylesheet(config = {}) {
 				this.error('failed to guess the output file name');
 			}
 
-			this.emitFile({
-				type: 'asset',
-				source: styles.filter(v => !!v).join(''),
-				fileName: name
-			});
+			bundle[name] = {
+				code: styles.filter(v => !!v).join('')
+			};
 		}
 	};
 }

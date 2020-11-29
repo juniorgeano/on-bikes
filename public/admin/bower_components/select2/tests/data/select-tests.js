@@ -130,10 +130,7 @@ test('multiple sets the value', function (assert) {
 
   var data = new SelectData($select, selectOptions);
 
-  assert.ok(
-    $select.val() == null || $select.val().length == 0,
-    'nothing should be selected'
-  );
+  assert.equal($select.val(), null);
 
   data.select({
     id: 'Two',
@@ -167,14 +164,12 @@ test('duplicates - single - same id on select triggers change',
   var data = new SelectData($select, data);
   var second = $('#qunit-fixture .duplicates option')[2];
 
-  var changeTriggered = false, inputTriggered = false;
+  var changeTriggered = false;
 
   assert.equal($select.val(), 'one');
 
   $select.on('change', function () {
-    changeTriggered = inputTriggered;
-  }).on('input', function() {
-    inputTriggered = true;
+    changeTriggered = true;
   });
 
   data.select({
@@ -190,13 +185,8 @@ test('duplicates - single - same id on select triggers change',
   );
 
   assert.ok(
-    inputTriggered,
-    'The input event should be triggered'
-  );
-
-  assert.ok(
     changeTriggered,
-    'The change event should be triggered after the input event'
+    'The change event should be triggered'
   );
 
   assert.ok(
@@ -212,14 +202,12 @@ test('duplicates - single - different id on select triggers change',
   var data = new SelectData($select, data);
   var second = $('#qunit-fixture .duplicates option')[2];
 
-  var changeTriggered = false, inputTriggered = false;
+  var changeTriggered = false;
 
   $select.val('two');
 
   $select.on('change', function () {
-    changeTriggered = inputTriggered;
-  }).on('input', function() {
-    inputTriggered = true;
+    changeTriggered = true;
   });
 
   data.select({
@@ -235,13 +223,8 @@ test('duplicates - single - different id on select triggers change',
   );
 
   assert.ok(
-    inputTriggered,
-    'The input event should be triggered'
-  );
-
-  assert.ok(
     changeTriggered,
-    'The change event should be triggered after the input event'
+    'The change event should be triggered'
   );
 
   assert.ok(
@@ -257,14 +240,12 @@ function (assert) {
   var data = new SelectData($select, data);
   var second = $('#qunit-fixture .duplicates-multi option')[2];
 
-  var changeTriggered = false, inputTriggered = false;
+  var changeTriggered = false;
 
   $select.val(['one']);
 
   $select.on('change', function () {
-    changeTriggered = inputTriggered;
-  }).on('input', function() {
-    inputTriggered = true;
+    changeTriggered = true;
   });
 
   data.select({
@@ -280,13 +261,8 @@ function (assert) {
   );
 
   assert.ok(
-    inputTriggered,
-    'The input event should be triggered'
-  );
-
-  assert.ok(
     changeTriggered,
-    'The change event should be triggered after the input event'
+    'The change event should be triggered'
   );
 
   assert.ok(
@@ -302,14 +278,12 @@ function (assert) {
   var data = new SelectData($select, data);
   var second = $('#qunit-fixture .duplicates-multi option')[2];
 
-  var changeTriggered = false, inputTriggered = false;
+  var changeTriggered = false;
 
   $select.val(['two']);
 
   $select.on('change', function () {
-    changeTriggered = inputTriggered;
-  }).on('input', function() {
-    inputTriggered = true;
+    changeTriggered = true;
   });
 
   data.select({
@@ -325,13 +299,8 @@ function (assert) {
   );
 
   assert.ok(
-    inputTriggered,
-    'The input event should be triggered'
-  );
-
-  assert.ok(
     changeTriggered,
-    'The change event should be triggered after the input event'
+    'The change event should be triggered'
   );
 
   assert.ok(

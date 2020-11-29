@@ -49,9 +49,7 @@ module.exports = {
 				var maxTick = Math.max(Math.abs(ticks[0]), Math.abs(ticks[ticks.length - 1]));
 				if (maxTick < 1e-4) { // all ticks are small numbers; use scientific notation
 					var logTick = helpers.log10(Math.abs(tickValue));
-					var numExponential = Math.floor(logTick) - Math.floor(logDelta);
-					numExponential = Math.max(Math.min(numExponential, 20), 0);
-					tickString = tickValue.toExponential(numExponential);
+					tickString = tickValue.toExponential(Math.floor(logTick) - Math.floor(logDelta));
 				} else {
 					var numDecimal = -1 * Math.floor(logDelta);
 					numDecimal = Math.max(Math.min(numDecimal, 20), 0); // toFixed has a max of 20 decimal places

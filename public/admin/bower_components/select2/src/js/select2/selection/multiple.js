@@ -37,7 +37,7 @@ define([
       '.select2-selection__choice__remove',
       function (evt) {
         // Ignore the event if it is disabled
-        if (self.isDisabled()) {
+        if (self.options.get('disabled')) {
           return;
         }
 
@@ -95,12 +95,7 @@ define([
       var formatted = this.display(selection, $selection);
 
       $selection.append(formatted);
-
-      var title = selection.title || selection.text;
-
-      if (title) {
-        $selection.attr('title', title);
-      }
+      $selection.attr('title', selection.title || selection.text);
 
       Utils.StoreData($selection[0], 'data', selection);
 

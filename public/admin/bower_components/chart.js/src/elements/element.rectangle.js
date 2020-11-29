@@ -131,8 +131,6 @@ function inRange(vm, x, y) {
 }
 
 module.exports = Element.extend({
-	_type: 'rectangle',
-
 	draw: function() {
 		var ctx = this._chart.ctx;
 		var vm = this._view;

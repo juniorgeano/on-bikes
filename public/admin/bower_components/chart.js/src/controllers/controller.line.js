@@ -29,50 +29,9 @@ defaults._set('line', {
 	}
 });
 
-function scaleClip(scale, halfBorderWidth) {
-	var tickOpts = scale && scale.options.ticks || {};
-	var reverse = tickOpts.reverse;
-	var min = tickOpts.min === undefined ? halfBorderWidth : 0;
-	var max = tickOpts.max === undefined ? halfBorderWidth : 0;
-	return {
-		start: reverse ? max : min,
-		end: reverse ? min : max
-	};
+function lineEnabled(dataset, options) {
+	return valueOrDefault(dataset.showLine, options.showLines);
 }
-
-function defaultClip(xScale, yScale, borderWidth) {
-	var halfBorderWidth = borderWidth / 2;
-	var x = scaleClip(xScale, halfBorderWidth);
-	var y = scaleClip(yScale, halfBorderWidth);
-
-	return {
-		top: y.end,
-		right: x.end,
-		bottom: y.start,
-		left: x.start
-	};
-}
-
-function toClip(value) {
-	var t, r, b, l;
-
-	if (helpers.isObject(value)) {
-		t = value.top;
-		r = value.right;
-		b = value.bottom;
-		l = value.left;
-	} else {
-		t = r = b = l = value;
-	}
-
-	return {
-		top: t,
-		right: r,
-		bottom: b,
-		left: l
-	};
-}
-
 
 module.exports = DatasetController.extend({
 
@@ -80,65 +39,30 @@ module.exports = DatasetController.extend({
 
 	dataElementType: elements.Point,
 
-	/**
-	 * @private
-	 */
-	_datasetElementOptions: [
-		'backgroundColor',
-		'borderCapStyle',
-		'borderColor',
-		'borderDash',
-		'borderDashOffset',
-		'borderJoinStyle',
-		'borderWidth',
-		'cubicInterpolationMode',
-		'fill'
-	],
-
-	/**
-	 * @private
-	 */
-	_dataElementOptions: {
-		backgroundColor: 'pointBackgroundColor',
-		borderColor: 'pointBorderColor',
-		borderWidth: 'pointBorderWidth',
-		hitRadius: 'pointHitRadius',
-		hoverBackgroundColor: 'pointHoverBackgroundColor',
-		hoverBorderColor: 'pointHoverBorderColor',
-		hoverBorderWidth: 'pointHoverBorderWidth',
-		hoverRadius: 'pointHoverRadius',
-		pointStyle: 'pointStyle',
-		radius: 'pointRadius',
-		rotation: 'pointRotation'
-	},
-
 	update: function(reset) {
 		var me = this;
 		var meta = me.getMeta();
 		var line = meta.dataset;
 		var points = meta.data || [];
-		var options = me.chart.options;
-		var config = me._config;
-		var showLine = me._showLine = valueOrDefault(config.showLine, options.showLines);
+		var scale = me.getScaleForId(meta.yAxisID);
+		var dataset = me.getDataset();
+		var showLine = lineEnabled(dataset, me.chart.options);
 		var i, ilen;
-
-		me._xScale = me.getScaleForId(meta.xAxisID);
-		me._yScale = me.getScaleForId(meta.yAxisID);
 
 		// Update Line
 		if (showLine) {
 			// Compatibility: If the properties are defined with only the old name, use those values
-			if (config.tension !== undefined && config.lineTension === undefined) {
-				config.lineTension = config.tension;
+			if ((dataset.tension !== undefined) && (dataset.lineTension === undefined)) {
+				dataset.lineTension = dataset.tension;
 			}
 
 			// Utility
-			line._scale = me._yScale;
+			line._scale = scale;
 			line._datasetIndex = me.index;
 			// Data
 			line._children = points;
 			// Model
-			line._model = me._resolveDatasetElementOptions(line);
+			line._model = me._resolveLineOptions(line);
 
 			line.pivot();
 		}
@@ -165,12 +89,12 @@ module.exports = DatasetController.extend({
 		var dataset = me.getDataset();
 		var datasetIndex = me.index;
 		var value = dataset.data[index];
-		var xScale = me._xScale;
-		var yScale = me._yScale;
+		var yScale = me.getScaleForId(meta.yAxisID);
+		var xScale = me.getScaleForId(meta.xAxisID);
 		var lineModel = meta.dataset._model;
 		var x, y;
 
-		var options = me._resolveDataElementOptions(point, index);
+		var options = me._resolvePointOptions(point, index);
 
 		x = xScale.getPixelForValue(typeof value === 'object' ? value : NaN, index, datasetIndex);
 		y = reset ? yScale.getBasePixel() : me.calculatePointY(value, index, datasetIndex);
@@ -204,21 +128,91 @@ module.exports = DatasetController.extend({
 	/**
 	 * @private
 	 */
-	_resolveDatasetElementOptions: function(element) {
+	_resolvePointOptions: function(element, index) {
 		var me = this;
-		var config = me._config;
+		var chart = me.chart;
+		var dataset = chart.data.datasets[me.index];
 		var custom = element.custom || {};
-		var options = me.chart.options;
-		var lineOptions = options.elements.line;
-		var values = DatasetController.prototype._resolveDatasetElementOptions.apply(me, arguments);
+		var options = chart.options.elements.point;
+		var values = {};
+		var i, ilen, key;
+
+		// Scriptable options
+		var context = {
+			chart: chart,
+			dataIndex: index,
+			dataset: dataset,
+			datasetIndex: me.index
+		};
+
+		var ELEMENT_OPTIONS = {
+			backgroundColor: 'pointBackgroundColor',
+			borderColor: 'pointBorderColor',
+			borderWidth: 'pointBorderWidth',
+			hitRadius: 'pointHitRadius',
+			hoverBackgroundColor: 'pointHoverBackgroundColor',
+			hoverBorderColor: 'pointHoverBorderColor',
+			hoverBorderWidth: 'pointHoverBorderWidth',
+			hoverRadius: 'pointHoverRadius',
+			pointStyle: 'pointStyle',
+			radius: 'pointRadius',
+			rotation: 'pointRotation'
+		};
+		var keys = Object.keys(ELEMENT_OPTIONS);
+
+		for (i = 0, ilen = keys.length; i < ilen; ++i) {
+			key = keys[i];
+			values[key] = resolve([
+				custom[key],
+				dataset[ELEMENT_OPTIONS[key]],
+				dataset[key],
+				options[key]
+			], context, index);
+		}
+
+		return values;
+	},
+
+	/**
+	 * @private
+	 */
+	_resolveLineOptions: function(element) {
+		var me = this;
+		var chart = me.chart;
+		var dataset = chart.data.datasets[me.index];
+		var custom = element.custom || {};
+		var options = chart.options;
+		var elementOptions = options.elements.line;
+		var values = {};
+		var i, ilen, key;
+
+		var keys = [
+			'backgroundColor',
+			'borderWidth',
+			'borderColor',
+			'borderCapStyle',
+			'borderDash',
+			'borderDashOffset',
+			'borderJoinStyle',
+			'fill',
+			'cubicInterpolationMode'
+		];
+
+		for (i = 0, ilen = keys.length; i < ilen; ++i) {
+			key = keys[i];
+			values[key] = resolve([
+				custom[key],
+				dataset[key],
+				elementOptions[key]
+			]);
+		}
 
 		// The default behavior of lines is to break at null values, according
 		// to https://github.com/chartjs/Chart.js/issues/2435#issuecomment-216718158
 		// This option gives lines the ability to span gaps
-		values.spanGaps = valueOrDefault(config.spanGaps, options.spanGaps);
-		values.tension = valueOrDefault(config.lineTension, lineOptions.tension);
-		values.steppedLine = resolve([custom.steppedLine, config.steppedLine, lineOptions.stepped]);
-		values.clip = toClip(valueOrDefault(config.clip, defaultClip(me._xScale, me._yScale, values.borderWidth)));
+		values.spanGaps = valueOrDefault(dataset.spanGaps, options.spanGaps);
+		values.tension = valueOrDefault(dataset.lineTension, elementOptions.tension);
+		values.steppedLine = resolve([custom.steppedLine, dataset.steppedLine, elementOptions.stepped]);
 
 		return values;
 	},
@@ -226,25 +220,18 @@ module.exports = DatasetController.extend({
 	calculatePointY: function(value, index, datasetIndex) {
 		var me = this;
 		var chart = me.chart;
-		var yScale = me._yScale;
+		var meta = me.getMeta();
+		var yScale = me.getScaleForId(meta.yAxisID);
 		var sumPos = 0;
 		var sumNeg = 0;
-		var i, ds, dsMeta, stackedRightValue, rightValue, metasets, ilen;
+		var i, ds, dsMeta;
 
 		if (yScale.options.stacked) {
-			rightValue = +yScale.getRightValue(value);
-			metasets = chart._getSortedVisibleDatasetMetas();
-			ilen = metasets.length;
-
-			for (i = 0; i < ilen; ++i) {
-				dsMeta = metasets[i];
-				if (dsMeta.index === datasetIndex) {
-					break;
-				}
-
-				ds = chart.data.datasets[dsMeta.index];
-				if (dsMeta.type === 'line' && dsMeta.yAxisID === yScale.id) {
-					stackedRightValue = +yScale.getRightValue(ds.data[index]);
+			for (i = 0; i < datasetIndex; i++) {
+				ds = chart.data.datasets[i];
+				dsMeta = chart.getDatasetMeta(i);
+				if (dsMeta.type === 'line' && dsMeta.yAxisID === yScale.id && chart.isDatasetVisible(i)) {
+					var stackedRightValue = Number(yScale.getRightValue(ds.data[index]));
 					if (stackedRightValue < 0) {
 						sumNeg += stackedRightValue || 0;
 					} else {
@@ -253,11 +240,13 @@ module.exports = DatasetController.extend({
 				}
 			}
 
+			var rightValue = Number(yScale.getRightValue(value));
 			if (rightValue < 0) {
 				return yScale.getPixelForValue(sumNeg + rightValue);
 			}
 			return yScale.getPixelForValue(sumPos + rightValue);
 		}
+
 		return yScale.getPixelForValue(value);
 	},
 
@@ -322,19 +311,18 @@ module.exports = DatasetController.extend({
 		var meta = me.getMeta();
 		var points = meta.data || [];
 		var area = chart.chartArea;
-		var canvas = chart.canvas;
-		var i = 0;
 		var ilen = points.length;
-		var clip;
+		var halfBorderWidth;
+		var i = 0;
 
-		if (me._showLine) {
-			clip = meta.dataset._model.clip;
+		if (lineEnabled(me.getDataset(), chart.options)) {
+			halfBorderWidth = (meta.dataset._model.borderWidth || 0) / 2;
 
 			helpers.canvas.clipArea(chart.ctx, {
-				left: clip.left === false ? 0 : area.left - clip.left,
-				right: clip.right === false ? canvas.width : area.right + clip.right,
-				top: clip.top === false ? 0 : area.top - clip.top,
-				bottom: clip.bottom === false ? canvas.height : area.bottom + clip.bottom
+				left: area.left,
+				right: area.right,
+				top: area.top - halfBorderWidth,
+				bottom: area.bottom + halfBorderWidth
 			});
 
 			meta.dataset.draw();

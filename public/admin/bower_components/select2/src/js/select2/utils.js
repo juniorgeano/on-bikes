@@ -332,8 +332,6 @@ define([
     if (Utils.__cache[id] != null) {
       delete Utils.__cache[id];
     }
-
-    element.removeAttribute('data-select2-id');
   };
 
   return Utils;

@@ -31,7 +31,7 @@ define([
 
   AllowClear.prototype._handleClear = function (_, evt) {
     // Ignore the event if it is disabled
-    if (this.isDisabled()) {
+    if (this.options.get('disabled')) {
       return;
     }
 
@@ -74,7 +74,7 @@ define([
       }
     }
 
-    this.$element.trigger('input').trigger('change');
+    this.$element.trigger('change');
 
     this.trigger('toggle', {});
   };
@@ -97,7 +97,7 @@ define([
       return;
     }
 
-    var removeAll = this.options.get('translations').get('removeAllItems');
+    var removeAll = this.options.get('translations').get('removeAllItems');   
 
     var $remove = $(
       '<span class="select2-selection__clear" title="' + removeAll() +'">' +

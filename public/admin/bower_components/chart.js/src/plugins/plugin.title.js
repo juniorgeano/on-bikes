@@ -111,20 +111,23 @@ var Title = Element.extend({
 	fit: function() {
 		var me = this;
 		var opts = me.options;
-		var minSize = me.minSize = {};
-		var isHorizontal = me.isHorizontal();
-		var lineCount, textSize;
+		var display = opts.display;
+		var minSize = me.minSize;
+		var lineCount = helpers.isArray(opts.text) ? opts.text.length : 1;
+		var fontOpts = helpers.options._parseFont(opts);
+		var textSize = display ? (lineCount * fontOpts.lineHeight) + (opts.padding * 2) : 0;
 
-		if (!opts.display) {
-			me.width = minSize.width = me.height = minSize.height = 0;
-			return;
+		if (me.isHorizontal()) {
+			minSize.width = me.maxWidth; // fill all the width
+			minSize.height = textSize;
+		} else {
+			minSize.width = textSize;
+			minSize.height = me.maxHeight; // fill all the height
 		}
 
-		lineCount = helpers.isArray(opts.text) ? opts.text.length : 1;
-		textSize = lineCount * helpers.options._parseFont(opts).lineHeight + opts.padding * 2;
+		me.width = minSize.width;
+		me.height = minSize.height;
 
-		me.width = minSize.width = isHorizontal ? me.maxWidth : textSize;
-		me.height = minSize.height = isHorizontal ? textSize : me.maxHeight;
 	},
 	afterFit: noop,
 
@@ -140,53 +143,51 @@ var Title = Element.extend({
 		var ctx = me.ctx;
 		var opts = me.options;
 
-		if (!opts.display) {
-			return;
-		}
+		if (opts.display) {
+			var fontOpts = helpers.options._parseFont(opts);
+			var lineHeight = fontOpts.lineHeight;
+			var offset = lineHeight / 2 + opts.padding;
+			var rotation = 0;
+			var top = me.top;
+			var left = me.left;
+			var bottom = me.bottom;
+			var right = me.right;
+			var maxWidth, titleX, titleY;
 
-		var fontOpts = helpers.options._parseFont(opts);
-		var lineHeight = fontOpts.lineHeight;
-		var offset = lineHeight / 2 + opts.padding;
-		var rotation = 0;
-		var top = me.top;
-		var left = me.left;
-		var bottom = me.bottom;
-		var right = me.right;
-		var maxWidth, titleX, titleY;
+			ctx.fillStyle = helpers.valueOrDefault(opts.fontColor, defaults.global.defaultFontColor); // render in correct colour
+			ctx.font = fontOpts.string;
 
-		ctx.fillStyle = helpers.valueOrDefault(opts.fontColor, defaults.global.defaultFontColor); // render in correct colour
-		ctx.font = fontOpts.string;
-
-		// Horizontal
-		if (me.isHorizontal()) {
-			titleX = left + ((right - left) / 2); // midpoint of the width
-			titleY = top + offset;
-			maxWidth = right - left;
-		} else {
-			titleX = opts.position === 'left' ? left + offset : right - offset;
-			titleY = top + ((bottom - top) / 2);
-			maxWidth = bottom - top;
-			rotation = Math.PI * (opts.position === 'left' ? -0.5 : 0.5);
-		}
-
-		ctx.save();
-		ctx.translate(titleX, titleY);
-		ctx.rotate(rotation);
-		ctx.textAlign = 'center';
-		ctx.textBaseline = 'middle';
-
-		var text = opts.text;
-		if (helpers.isArray(text)) {
-			var y = 0;
-			for (var i = 0; i < text.length; ++i) {
-				ctx.fillText(text[i], 0, y, maxWidth);
-				y += lineHeight;
+			// Horizontal
+			if (me.isHorizontal()) {
+				titleX = left + ((right - left) / 2); // midpoint of the width
+				titleY = top + offset;
+				maxWidth = right - left;
+			} else {
+				titleX = opts.position === 'left' ? left + offset : right - offset;
+				titleY = top + ((bottom - top) / 2);
+				maxWidth = bottom - top;
+				rotation = Math.PI * (opts.position === 'left' ? -0.5 : 0.5);
 			}
-		} else {
-			ctx.fillText(text, 0, 0, maxWidth);
-		}
 
-		ctx.restore();
+			ctx.save();
+			ctx.translate(titleX, titleY);
+			ctx.rotate(rotation);
+			ctx.textAlign = 'center';
+			ctx.textBaseline = 'middle';
+
+			var text = opts.text;
+			if (helpers.isArray(text)) {
+				var y = 0;
+				for (var i = 0; i < text.length; ++i) {
+					ctx.fillText(text[i], 0, y, maxWidth);
+					y += lineHeight;
+				}
+			} else {
+				ctx.fillText(text, 0, 0, maxWidth);
+			}
+
+			ctx.restore();
+		}
 	}
 });
 

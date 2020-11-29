@@ -3,63 +3,100 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+var session = require('express-session');
+var RedisStore = require('connect-redis')(session);
 var formidable = require('formidable');
 var http = require('http');
 var socket = require('socket.io');
 var path = require('path');
+
 
 var app = express();
 
 var http = http.Server(app);
 var io = socket(http);
 
-io.on('connection', function(socket){
-	
-	console.log('Usuário: Novo usuário conectado.');
-	
+io.on('connection', function(socket) {
+
+  console.log('Novo usuário conectado');
+
 });
 
 var indexRouter = require('./routes/index')(io);
 var adminRouter = require('./routes/admin')(io);
 
-//middleware
-app.use(function(req, res, next){
-	
-	req.body = {};
-	
-	if (req.method === 'POST') {
-		
-		var form = formidable.IncomingForm({
-			uploadDir: path.join(__dirname, "/public/images"),
-			keepExtensions: true
-		});
-		
-		form.parse(req, function(err, fields, files){
-			
-			req.body = fields;
-			req.fields = fields;
-			req.files = files;
-			
-			next();
-			
-		});
-		
-	} else {
-		
-		next();
-		
-	}
-	
+ app.use(function(req, res, next) {
+
+  req.body = {};
+
+  if(req.method === 'POST') {
+
+    var form = formidable.IncomingForm({
+
+      uploadDir:path.join(__dirname, "/public/images"),
+      keepextesions:true
+  
+    });
+  
+    form.parse(req, function(err, fields, files){
+      req.body = fields;
+      req.fields = fields;
+      req.files = files;
+  
+      next();
+  
+    });
+  
+  } else {
+    next();
+  }
+
 });
 
+
+/*app.use(function(req,res,next){
+  
+  let content_type = req.headers["content-type"]
+  
+  if (req.method === 'POST' && content_type.indexOf('multipart/form-data;') > -1) {
+ 
+    console.log('--------------------------------------------------------')
+    console.log(content_type)
+ 
+        var form = formidable.IncomingForm({
+            uploadDir: path.join( __dirname, "/public/images"),
+            keepExtensions: true
+        })
+ 
+        form.parse(req, function(err,fields,files){
+            req.fields = fields
+            req.files = files
+ 
+            next()
+        })
+  } else {
+        next()
+    }
+})
+*/
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
+/*
+app.use(session({
+  store: new RedisStore({
+    host: 'localhost',
+    port: 6379
+  }),
+  secret: 'passw@rd',
+  resave:true,
+  saveUninitialized:true
+}));
+*/
+
 app.use(logger('dev'));
-//app.use(express.json());
-//app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -82,10 +119,8 @@ app.use(function(err, req, res, next) {
   res.render('error');
 });
 
-http.listen(3000, function(){
-	
-	console.log('Servidor em execução.');
-	
-});
+http.listen(3000, function() {
 
-//module.exports = app;
+  console.log("Servidor em execução");
+
+});

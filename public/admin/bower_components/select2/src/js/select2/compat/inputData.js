@@ -65,13 +65,13 @@ define([
       });
 
       this.$element.val(data.id);
-      this.$element.trigger('input').trigger('change');
+      this.$element.trigger('change');
     } else {
       var value = this.$element.val();
       value += this._valueSeparator + data.id;
 
       this.$element.val(value);
-      this.$element.trigger('input').trigger('change');
+      this.$element.trigger('change');
     }
   };
 
@@ -94,7 +94,7 @@ define([
       }
 
       self.$element.val(values.join(self._valueSeparator));
-      self.$element.trigger('input').trigger('change');
+      self.$element.trigger('change');
     });
   };
 

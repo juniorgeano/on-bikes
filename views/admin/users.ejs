@@ -1,9 +1,4 @@
-	<%- include("./inc/header") -%>
-
-  <!-- Left side column. contains the logo and sidebar -->
-  
-  <%- include("./inc/sidebar") -%>
-  
+<%- include("inc/header") -%>
   <!-- Content Wrapper. Contains page content -->
   <div class="content-wrapper">
     <!-- Content Header (Page header) -->
@@ -37,17 +32,18 @@
                   </tr>
                 </thead>
                 <tbody>
-                    <% data.forEach(function (row){ %>
-                    <tr data-row="<%= JSON.stringify(row); %>">
-                        <td><%= row.id %>.</td>
+                  <% data.forEach(function(row){ %>
+                    <tr data-row="<%= JSON.stringify(row) %>">
+                        <td><%= row.id %></td>
                         <td><%= row.name %></td>
                         <td><%= row.email %></td>
                         <td>
                             <button type="button" class="btn btn-xs btn-info btn-update"><i class="fa fa-pencil"></i> Editar</button>&nbsp;
-                            <button type="button" class="btn btn-xs btn-warning"><i class="fa fa-lock"></i> Alterar Senha</button>&nbsp;
+                            <button type="button" class="btn btn-xs btn-warning">
+                                <i class="fa fa-lock"></i> Alterar Senha</button>&nbsp;
                             <button type="button" class="btn btn-xs btn-danger btn-delete"><i class="fa fa-trash"></i> Excluir</button></td>
                     </tr>
-					<% }); %>
+                  <% }); %>
                 </tbody>
             </table>
         </div>
@@ -158,41 +154,32 @@
     <!-- /.modal-dialog -->
   </div>
 
-  <!-- Main Footer -->
-  <%- include("./inc/footer") -%>
+<%- include("inc/footer") -%>
 
-  </div>
+<script src="/js/hcode-formsave.js"></script>
+<script src="/js/hcode-grid.js"></script>
+<script>
 
-  <%- include("./inc/footer-scripts") -%>
-  
-	<script src="/js/hcode-formsave.js"></script>
-	<script src="/js/hcode-grid.js"></script>
-	
-	<script>
-	
-		new HcodeGrid({
-			deleteUrl: '/admin/users/${data.id}',
-			deleteMsg: 'Deseja realmente excluir o usuário ${data.name}?',
-			listeners: {
-				buttonClick: (btn, data, e) =>{
-					document.querySelector("#modal-update-password form [name=id]").value = data.id;
-					$("#modal-update-password").modal('show');
-					
-				}
-			}
-		});
-		
-		document.querySelector("#modal-update-password form").save({
-			success:()=>{
-				window.location.reload();
-			},
-			failure:err=>{
-				alert(err);
-			}
-		});
-	
-	</script>
-	
-</body>
+new HcodeGrid({
+  deleteUrl:'/admin/users/${data.id}',
+  deleteMsg:'Deseja realmente excluir o usuário ${data.name}?',
+  listeners:{
+    buttonClick:(btn, data, e)=> {
 
-</html>
+      document.querySelector("#modal-update-password form [name=id]").value = data.id;
+
+      $("#modal-update-password").modal("show");
+
+    }
+  }
+});
+
+document.querySelector("#modal-update-password form").save({
+  sucess:()=>{
+    window.location.reload();
+  },
+  failure:err=>{
+    alert(err);
+  }
+});
+</script>

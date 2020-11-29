@@ -18,6 +18,8 @@ defaults._set('horizontalBar', {
 		yAxes: [{
 			type: 'category',
 			position: 'left',
+			categoryPercentage: 0.8,
+			barPercentage: 0.9,
 			offset: true,
 			gridLines: {
 				offsetGridLines: true
@@ -37,15 +39,6 @@ defaults._set('horizontalBar', {
 	}
 });
 
-defaults._set('global', {
-	datasets: {
-		horizontalBar: {
-			categoryPercentage: 0.8,
-			barPercentage: 0.9
-		}
-	}
-});
-
 module.exports = BarController.extend({
 	/**
 	 * @private
@@ -61,3 +54,4 @@ module.exports = BarController.extend({
 		return this.getMeta().yAxisID;
 	}
 });
+

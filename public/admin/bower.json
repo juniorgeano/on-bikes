@@ -57,7 +57,7 @@
     "font-awesome": "^4.7.0",
     "Ionicons": "ionicons#^2.0.1",
     "jquery-ui": "1.11.4",
-    "chart.js": "^2.9.4"
+    "chart.js": "^2.8.0"
   },
   "resolutions": {
     "jquery": "^3.2.1"

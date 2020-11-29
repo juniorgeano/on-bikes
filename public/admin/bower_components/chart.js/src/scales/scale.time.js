@@ -5,8 +5,6 @@ var defaults = require('../core/core.defaults');
 var helpers = require('../helpers/index');
 var Scale = require('../core/core.scale');
 
-var deprecated = helpers._deprecated;
-var resolve = helpers.options.resolve;
 var valueOrDefault = helpers.valueOrDefault;
 
 // Integer constants are from the ES6 spec.
@@ -17,42 +15,42 @@ var INTERVALS = {
 	millisecond: {
 		common: true,
 		size: 1,
-		steps: 1000
+		steps: [1, 2, 5, 10, 20, 50, 100, 250, 500]
 	},
 	second: {
 		common: true,
 		size: 1000,
-		steps: 60
+		steps: [1, 2, 5, 10, 15, 30]
 	},
 	minute: {
 		common: true,
 		size: 60000,
-		steps: 60
+		steps: [1, 2, 5, 10, 15, 30]
 	},
 	hour: {
 		common: true,
 		size: 3600000,
-		steps: 24
+		steps: [1, 2, 3, 6, 12]
 	},
 	day: {
 		common: true,
 		size: 86400000,
-		steps: 30
+		steps: [1, 2, 5]
 	},
 	week: {
 		common: false,
 		size: 604800000,
-		steps: 4
+		steps: [1, 2, 3, 4]
 	},
 	month: {
 		common: true,
 		size: 2.628e9,
-		steps: 12
+		steps: [1, 2, 3]
 	},
 	quarter: {
 		common: false,
 		size: 7.884e9,
-		steps: 4
+		steps: [1, 2, 3, 4]
 	},
 	year: {
 		common: true,
@@ -80,14 +78,6 @@ function arrayUnique(items) {
 	}
 
 	return out;
-}
-
-function getMin(options) {
-	return helpers.valueOrDefault(options.time.min, options.ticks.min);
-}
-
-function getMax(options) {
-	return helpers.valueOrDefault(options.time.max, options.ticks.max);
 }
 
 /**
@@ -242,6 +232,31 @@ function parse(scale, input) {
 }
 
 /**
+ * Returns the number of unit to skip to be able to display up to `capacity` number of ticks
+ * in `unit` for the given `min` / `max` range and respecting the interval steps constraints.
+ */
+function determineStepSize(min, max, unit, capacity) {
+	var range = max - min;
+	var interval = INTERVALS[unit];
+	var milliseconds = interval.size;
+	var steps = interval.steps;
+	var i, ilen, factor;
+
+	if (!steps) {
+		return Math.ceil(range / (capacity * milliseconds));
+	}
+
+	for (i = 0, ilen = steps.length; i < ilen; ++i) {
+		factor = steps[i];
+		if (Math.ceil(range / (milliseconds * factor)) <= capacity) {
+			break;
+		}
+	}
+
+	return factor;
+}
+
+/**
  * Figures out what unit results in an appropriate number of auto-generated ticks
  */
 function determineUnitForAutoTicks(minUnit, min, max, capacity) {
@@ -250,7 +265,7 @@ function determineUnitForAutoTicks(minUnit, min, max, capacity) {
 
 	for (i = UNITS.indexOf(minUnit); i < ilen - 1; ++i) {
 		interval = INTERVALS[UNITS[i]];
-		factor = interval.steps ? interval.steps : MAX_INTEGER;
+		factor = interval.steps ? interval.steps[interval.steps.length - 1] : MAX_INTEGER;
 
 		if (interval.common && Math.ceil((max - min) / (factor * interval.size)) <= capacity) {
 			return UNITS[i];
@@ -263,12 +278,13 @@ function determineUnitForAutoTicks(minUnit, min, max, capacity) {
 /**
  * Figures out what unit to format a set of ticks with
  */
-function determineUnitForFormatting(scale, numTicks, minUnit, min, max) {
+function determineUnitForFormatting(scale, ticks, minUnit, min, max) {
+	var ilen = UNITS.length;
 	var i, unit;
 
-	for (i = UNITS.length - 1; i >= UNITS.indexOf(minUnit); i--) {
+	for (i = ilen - 1; i >= UNITS.indexOf(minUnit); i--) {
 		unit = UNITS[i];
-		if (INTERVALS[unit].common && scale._adapter.diff(max, min, unit) >= numTicks - 1) {
+		if (INTERVALS[unit].common && scale._adapter.diff(max, min, unit) >= ticks.length) {
 			return unit;
 		}
 	}
@@ -286,7 +302,7 @@ function determineMajorUnit(unit) {
 
 /**
  * Generates a maximum of `capacity` timestamps between min and max, rounded to the
- * `minor` unit using the given scale time `options`.
+ * `minor` unit, aligned on the `major` unit and using the given scale time `options`.
  * Important: this method can return ticks outside the min and max range, it's the
  * responsibility of the calling code to clamp values if needed.
  */
@@ -295,32 +311,50 @@ function generate(scale, min, max, capacity) {
 	var options = scale.options;
 	var timeOpts = options.time;
 	var minor = timeOpts.unit || determineUnitForAutoTicks(timeOpts.minUnit, min, max, capacity);
-	var stepSize = resolve([timeOpts.stepSize, timeOpts.unitStepSize, 1]);
+	var major = determineMajorUnit(minor);
+	var stepSize = valueOrDefault(timeOpts.stepSize, timeOpts.unitStepSize);
 	var weekday = minor === 'week' ? timeOpts.isoWeekday : false;
+	var majorTicksEnabled = options.ticks.major.enabled;
+	var interval = INTERVALS[minor];
 	var first = min;
+	var last = max;
 	var ticks = [];
 	var time;
+
+	if (!stepSize) {
+		stepSize = determineStepSize(min, max, minor, capacity);
+	}
 
 	// For 'week' unit, handle the first day of week option
 	if (weekday) {
 		first = +adapter.startOf(first, 'isoWeek', weekday);
+		last = +adapter.startOf(last, 'isoWeek', weekday);
 	}
 
-	// Align first ticks on unit
+	// Align first/last ticks on unit
 	first = +adapter.startOf(first, weekday ? 'day' : minor);
+	last = +adapter.startOf(last, weekday ? 'day' : minor);
 
-	// Prevent browser from freezing in case user options request millions of milliseconds
-	if (adapter.diff(max, min, minor) > 100000 * stepSize) {
-		throw min + ' and ' + max + ' are too far apart with stepSize of ' + stepSize + ' ' + minor;
+	// Make sure that the last tick include max
+	if (last < max) {
+		last = +adapter.add(last, 1, minor);
 	}
 
-	for (time = first; time < max; time = +adapter.add(time, stepSize, minor)) {
-		ticks.push(time);
+	time = first;
+
+	if (majorTicksEnabled && major && !weekday && !timeOpts.round) {
+		// Align the first tick on the previous `minor` unit aligned on the `major` unit:
+		// we first aligned time on the previous `major` unit then add the number of full
+		// stepSize there is between first and the previous major time.
+		time = +adapter.startOf(time, major);
+		time = +adapter.add(time, ~~((first - time) / (interval.size * stepSize)) * stepSize, minor);
 	}
 
-	if (time === max || options.bounds === 'ticks') {
-		ticks.push(time);
+	for (; time < last; time = +adapter.add(time, stepSize, minor)) {
+		ticks.push(+time);
 	}
+
+	ticks.push(+time);
 
 	return ticks;
 }
@@ -337,57 +371,42 @@ function computeOffsets(table, ticks, min, max, options) {
 	var first, last;
 
 	if (options.offset && ticks.length) {
-		first = interpolate(table, 'time', ticks[0], 'pos');
-		if (ticks.length === 1) {
-			start = 1 - first;
-		} else {
-			start = (interpolate(table, 'time', ticks[1], 'pos') - first) / 2;
+		if (!options.time.min) {
+			first = interpolate(table, 'time', ticks[0], 'pos');
+			if (ticks.length === 1) {
+				start = 1 - first;
+			} else {
+				start = (interpolate(table, 'time', ticks[1], 'pos') - first) / 2;
+			}
 		}
-		last = interpolate(table, 'time', ticks[ticks.length - 1], 'pos');
-		if (ticks.length === 1) {
-			end = last;
-		} else {
-			end = (last - interpolate(table, 'time', ticks[ticks.length - 2], 'pos')) / 2;
-		}
-	}
-
-	return {start: start, end: end, factor: 1 / (start + 1 + end)};
-}
-
-function setMajorTicks(scale, ticks, map, majorUnit) {
-	var adapter = scale._adapter;
-	var first = +adapter.startOf(ticks[0].value, majorUnit);
-	var last = ticks[ticks.length - 1].value;
-	var major, index;
-
-	for (major = first; major <= last; major = +adapter.add(major, 1, majorUnit)) {
-		index = map[major];
-		if (index >= 0) {
-			ticks[index].major = true;
+		if (!options.time.max) {
+			last = interpolate(table, 'time', ticks[ticks.length - 1], 'pos');
+			if (ticks.length === 1) {
+				end = last;
+			} else {
+				end = (last - interpolate(table, 'time', ticks[ticks.length - 2], 'pos')) / 2;
+			}
 		}
 	}
-	return ticks;
+
+	return {start: start, end: end};
 }
 
 function ticksFromTimestamps(scale, values, majorUnit) {
 	var ticks = [];
-	var map = {};
-	var ilen = values.length;
-	var i, value;
+	var i, ilen, value, major;
 
-	for (i = 0; i < ilen; ++i) {
+	for (i = 0, ilen = values.length; i < ilen; ++i) {
 		value = values[i];
-		map[value] = i;
+		major = majorUnit ? value === +scale._adapter.startOf(value, majorUnit) : false;
 
 		ticks.push({
 			value: value,
-			major: false
+			major: major
 		});
 	}
 
-	// We set the major ticks separately from the above loop because calling startOf for every tick
-	// is expensive when there is a large number of ticks
-	return (ilen === 0 || !majorUnit) ? ticks : setMajorTicks(scale, ticks, map, majorUnit);
+	return ticks;
 }
 
 var defaultConfig = {
@@ -414,6 +433,7 @@ var defaultConfig = {
 	adapters: {},
 	time: {
 		parser: false, // false == a pattern string from https://momentjs.com/docs/#/parsing/string-format/ or a custom callback that converts its argument to a moment
+		format: false, // DEPRECATED false == date objects, moment object, callback or a pattern string from https://momentjs.com/docs/#/parsing/string-format/
 		unit: false, // false == automatic or override with week, month, year, etc.
 		round: false, // none, or override with week, month, year, etc.
 		displayFormat: false, // DEPRECATED
@@ -453,9 +473,9 @@ module.exports = Scale.extend({
 		var adapter = me._adapter = new adapters._date(options.adapters.date);
 
 		// DEPRECATIONS: output a message only one time per update
-		deprecated('time scale', time.format, 'time.format', 'time.parser');
-		deprecated('time scale', time.min, 'time.min', 'ticks.min');
-		deprecated('time scale', time.max, 'time.max', 'ticks.max');
+		if (time.format) {
+			console.warn('options.time.format is deprecated and replaced by options.time.parser.');
+		}
 
 		// Backward compatibility: before introducing adapter, `displayFormats` was
 		// supposed to contain *all* unit/string pairs but this can't be resolved
@@ -480,20 +500,22 @@ module.exports = Scale.extend({
 		var me = this;
 		var chart = me.chart;
 		var adapter = me._adapter;
-		var options = me.options;
-		var unit = options.time.unit || 'day';
+		var timeOpts = me.options.time;
+		var unit = timeOpts.unit || 'day';
 		var min = MAX_INTEGER;
 		var max = MIN_INTEGER;
 		var timestamps = [];
 		var datasets = [];
 		var labels = [];
-		var i, j, ilen, jlen, data, timestamp, labelsAdded;
-		var dataLabels = me._getLabels();
+		var i, j, ilen, jlen, data, timestamp;
+		var dataLabels = chart.data.labels || [];
 
+		// Convert labels to timestamps
 		for (i = 0, ilen = dataLabels.length; i < ilen; ++i) {
 			labels.push(parse(me, dataLabels[i]));
 		}
 
+		// Convert data to timestamps
 		for (i = 0, ilen = (chart.data.datasets || []).length; i < ilen; ++i) {
 			if (chart.isDatasetVisible(i)) {
 				data = chart.data.datasets[i].data;
@@ -508,11 +530,10 @@ module.exports = Scale.extend({
 						datasets[i][j] = timestamp;
 					}
 				} else {
-					datasets[i] = labels.slice(0);
-					if (!labelsAdded) {
-						timestamps = timestamps.concat(labels);
-						labelsAdded = true;
+					for (j = 0, jlen = labels.length; j < jlen; ++j) {
+						timestamps.push(labels[j]);
 					}
+					datasets[i] = labels.slice(0);
 				}
 			} else {
 				datasets[i] = [];
@@ -520,18 +541,20 @@ module.exports = Scale.extend({
 		}
 
 		if (labels.length) {
+			// Sort labels **after** data have been converted
+			labels = arrayUnique(labels).sort(sorter);
 			min = Math.min(min, labels[0]);
 			max = Math.max(max, labels[labels.length - 1]);
 		}
 
 		if (timestamps.length) {
-			timestamps = ilen > 1 ? arrayUnique(timestamps).sort(sorter) : timestamps.sort(sorter);
+			timestamps = arrayUnique(timestamps).sort(sorter);
 			min = Math.min(min, timestamps[0]);
 			max = Math.max(max, timestamps[timestamps.length - 1]);
 		}
 
-		min = parse(me, getMin(options)) || min;
-		max = parse(me, getMax(options)) || max;
+		min = parse(me, timeOpts.min) || min;
+		max = parse(me, timeOpts.max) || max;
 
 		// In case there is no valid min/max, set limits based on unit time option
 		min = min === MAX_INTEGER ? +adapter.startOf(Date.now(), unit) : min;
@@ -542,6 +565,7 @@ module.exports = Scale.extend({
 		me.max = Math.max(min + 1, max);
 
 		// PRIVATE
+		me._horizontal = me.isHorizontal();
 		me._table = [];
 		me._timestamps = {
 			data: timestamps,
@@ -555,21 +579,21 @@ module.exports = Scale.extend({
 		var min = me.min;
 		var max = me.max;
 		var options = me.options;
-		var tickOpts = options.ticks;
 		var timeOpts = options.time;
-		var timestamps = me._timestamps;
+		var timestamps = [];
 		var ticks = [];
-		var capacity = me.getLabelCapacity(min);
-		var source = tickOpts.source;
-		var distribution = options.distribution;
 		var i, ilen, timestamp;
 
-		if (source === 'data' || (source === 'auto' && distribution === 'series')) {
-			timestamps = timestamps.data;
-		} else if (source === 'labels') {
-			timestamps = timestamps.labels;
-		} else {
-			timestamps = generate(me, min, max, capacity, options);
+		switch (options.ticks.source) {
+		case 'data':
+			timestamps = me._timestamps.data;
+			break;
+		case 'labels':
+			timestamps = me._timestamps.labels;
+			break;
+		case 'auto':
+		default:
+			timestamps = generate(me, min, max, me.getLabelCapacity(min), options);
 		}
 
 		if (options.bounds === 'ticks' && timestamps.length) {
@@ -578,8 +602,8 @@ module.exports = Scale.extend({
 		}
 
 		// Enforce limits with user min/max options
-		min = parse(me, getMin(options)) || min;
-		max = parse(me, getMax(options)) || max;
+		min = parse(me, timeOpts.min) || min;
+		max = parse(me, timeOpts.max) || max;
 
 		// Remove ticks outside the min/max range
 		for (i = 0, ilen = timestamps.length; i < ilen; ++i) {
@@ -593,17 +617,12 @@ module.exports = Scale.extend({
 		me.max = max;
 
 		// PRIVATE
-		// determineUnitForFormatting relies on the number of ticks so we don't use it when
-		// autoSkip is enabled because we don't yet know what the final number of ticks will be
-		me._unit = timeOpts.unit || (tickOpts.autoSkip
-			? determineUnitForAutoTicks(timeOpts.minUnit, me.min, me.max, capacity)
-			: determineUnitForFormatting(me, ticks.length, timeOpts.minUnit, me.min, me.max));
-		me._majorUnit = !tickOpts.major.enabled || me._unit === 'year' ? undefined
-			: determineMajorUnit(me._unit);
-		me._table = buildLookupTable(me._timestamps.data, min, max, distribution);
+		me._unit = timeOpts.unit || determineUnitForFormatting(me, ticks, timeOpts.minUnit, me.min, me.max);
+		me._majorUnit = determineMajorUnit(me._unit);
+		me._table = buildLookupTable(me._timestamps.data, min, max, options.distribution);
 		me._offsets = computeOffsets(me._table, ticks, min, max, options);
 
-		if (tickOpts.reverse) {
+		if (options.ticks.reverse) {
 			ticks.reverse();
 		}
 
@@ -642,17 +661,12 @@ module.exports = Scale.extend({
 		var minorFormat = formats[me._unit];
 		var majorUnit = me._majorUnit;
 		var majorFormat = formats[majorUnit];
-		var tick = ticks[index];
-		var tickOpts = options.ticks;
-		var major = majorUnit && majorFormat && tick && tick.major;
+		var majorTime = +adapter.startOf(time, majorUnit);
+		var majorTickOpts = options.ticks.major;
+		var major = majorTickOpts.enabled && majorUnit && majorFormat && time === majorTime;
 		var label = adapter.format(time, format ? format : major ? majorFormat : minorFormat);
-		var nestedTickOpts = major ? tickOpts.major : tickOpts.minor;
-		var formatter = resolve([
-			nestedTickOpts.callback,
-			nestedTickOpts.userCallback,
-			tickOpts.callback,
-			tickOpts.userCallback
-		]);
+		var tickOpts = major ? majorTickOpts : options.ticks.minor;
+		var formatter = valueOrDefault(tickOpts.callback, tickOpts.userCallback);
 
 		return formatter ? formatter(label, index, ticks) : label;
 	},
@@ -673,9 +687,13 @@ module.exports = Scale.extend({
 	 */
 	getPixelForOffset: function(time) {
 		var me = this;
-		var offsets = me._offsets;
+		var isReverse = me.options.ticks.reverse;
+		var size = me._horizontal ? me.width : me.height;
+		var start = me._horizontal ? isReverse ? me.right : me.left : isReverse ? me.bottom : me.top;
 		var pos = interpolate(me._table, 'time', time, 'pos');
-		return me.getPixelForDecimal((offsets.start + pos) * offsets.factor);
+		var offset = size * (me._offsets.start + pos) / (me._offsets.start + 1 + me._offsets.end);
+
+		return isReverse ? start - offset : start + offset;
 	},
 
 	getPixelForValue: function(value, index, datasetIndex) {
@@ -704,8 +722,9 @@ module.exports = Scale.extend({
 
 	getValueForPixel: function(pixel) {
 		var me = this;
-		var offsets = me._offsets;
-		var pos = me.getDecimalForPixel(pixel) / offsets.factor - offsets.end;
+		var size = me._horizontal ? me.width : me.height;
+		var start = me._horizontal ? me.left : me.top;
+		var pos = (size ? (pixel - start) / size : 0) * (me._offsets.start + 1 + me._offsets.start) - me._offsets.end;
 		var time = interpolate(me._table, 'pos', pos, 'time');
 
 		// DEPRECATION, we should return time directly
@@ -713,29 +732,19 @@ module.exports = Scale.extend({
 	},
 
 	/**
-	 * @private
-	 */
-	_getLabelSize: function(label) {
-		var me = this;
-		var ticksOpts = me.options.ticks;
-		var tickLabelWidth = me.ctx.measureText(label).width;
-		var angle = helpers.toRadians(me.isHorizontal() ? ticksOpts.maxRotation : ticksOpts.minRotation);
-		var cosRotation = Math.cos(angle);
-		var sinRotation = Math.sin(angle);
-		var tickFontSize = valueOrDefault(ticksOpts.fontSize, defaults.global.defaultFontSize);
-
-		return {
-			w: (tickLabelWidth * cosRotation) + (tickFontSize * sinRotation),
-			h: (tickLabelWidth * sinRotation) + (tickFontSize * cosRotation)
-		};
-	},
-
-	/**
 	 * Crude approximation of what the label width might be
 	 * @private
 	 */
 	getLabelWidth: function(label) {
-		return this._getLabelSize(label).w;
+		var me = this;
+		var ticksOpts = me.options.ticks;
+		var tickLabelWidth = me.ctx.measureText(label).width;
+		var angle = helpers.toRadians(ticksOpts.maxRotation);
+		var cosRotation = Math.cos(angle);
+		var sinRotation = Math.sin(angle);
+		var tickFontSize = valueOrDefault(ticksOpts.fontSize, defaults.global.defaultFontSize);
+
+		return (tickLabelWidth * cosRotation) + (tickFontSize * sinRotation);
 	},
 
 	/**
@@ -743,18 +752,13 @@ module.exports = Scale.extend({
 	 */
 	getLabelCapacity: function(exampleTime) {
 		var me = this;
-		var timeOpts = me.options.time;
-		var displayFormats = timeOpts.displayFormats;
 
 		// pick the longest format (milliseconds) for guestimation
-		var format = displayFormats[timeOpts.unit] || displayFormats.millisecond;
-		var exampleLabel = me.tickFormatFunction(exampleTime, 0, ticksFromTimestamps(me, [exampleTime], me._majorUnit), format);
-		var size = me._getLabelSize(exampleLabel);
-		var capacity = Math.floor(me.isHorizontal() ? me.width / size.w : me.height / size.h);
-
-		if (me.options.offset) {
-			capacity--;
-		}
+		var format = me.options.time.displayFormats.millisecond;
+		var exampleLabel = me.tickFormatFunction(exampleTime, 0, [], format);
+		var tickLabelWidth = me.getLabelWidth(exampleLabel);
+		var innerWidth = me.isHorizontal() ? me.width : me.height;
+		var capacity = Math.floor(innerWidth / tickLabelWidth);
 
 		return capacity > 0 ? capacity : 1;
 	}

@@ -11,10 +11,6 @@ define([
       this.fromElement($element);
     }
 
-    if ($element != null) {
-      this.options = Defaults.applyFromElement(this.options, $element);
-    }
-
     this.options = Defaults.apply(this.options);
 
     if ($element && $element.is('input')) {
@@ -36,6 +32,14 @@ define([
 
     if (this.options.disabled == null) {
       this.options.disabled = $e.prop('disabled');
+    }
+
+    if (this.options.language == null) {
+      if ($e.prop('lang')) {
+        this.options.language = $e.prop('lang').toLowerCase();
+      } else if ($e.closest('[lang]').prop('lang')) {
+        this.options.language = $e.closest('[lang]').prop('lang');
+      }
     }
 
     if (this.options.dir == null) {

@@ -1,7 +1,6 @@
 # Summary
 
-* [Chart.js](https://www.chartjs.org)
-* [Introduction](README.md)
+* [Chart.js](README.md)
 * [Getting Started](getting-started/README.md)
   * [Installation](getting-started/installation.md)
   * [Integration](getting-started/integration.md)
@@ -16,7 +15,6 @@
   * [Options](general/options.md)
   * [Colors](general/colors.md)
   * [Fonts](general/fonts.md)
-  * [Performance](general/performance.md)  
 * [Configuration](configuration/README.md)
   * [Animations](configuration/animations.md)
   * [Layout](configuration/layout.md)

@@ -27,7 +27,7 @@ describe('Title block tests', function() {
 		var minSize = title.update(400, 200);
 
 		expect(minSize).toEqual({
-			width: 0,
+			width: 400,
 			height: 0
 		});
 
@@ -58,7 +58,7 @@ describe('Title block tests', function() {
 
 		expect(minSize).toEqual({
 			width: 0,
-			height: 0
+			height: 400
 		});
 
 		// Now we have a height since we display
@@ -135,9 +135,6 @@ describe('Title block tests', function() {
 			name: 'rotate',
 			args: [0]
 		}, {
-			name: 'setTextAlign',
-			args: ['center'],
-		}, {
 			name: 'fillText',
 			args: ['My title', 0, 0, 400]
 		}, {
@@ -188,9 +185,6 @@ describe('Title block tests', function() {
 			name: 'rotate',
 			args: [-0.5 * Math.PI]
 		}, {
-			name: 'setTextAlign',
-			args: ['center'],
-		}, {
 			name: 'fillText',
 			args: ['My title', 0, 0, 400]
 		}, {
@@ -223,9 +217,6 @@ describe('Title block tests', function() {
 		}, {
 			name: 'rotate',
 			args: [0.5 * Math.PI]
-		}, {
-			name: 'setTextAlign',
-			args: ['center'],
 		}, {
 			name: 'fillText',
 			args: ['My title', 0, 0, 400]

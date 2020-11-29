@@ -71,9 +71,6 @@ test('current gets default for single', function (assert) {
 
   var data = new ArrayData($select, arrayOptions);
 
-  var container = new MockContainer();
-  data.bind(container, $('<div></div>'));
-
   data.current(function (val) {
     assert.equal(
       val.length,
@@ -96,9 +93,6 @@ test('current gets default for multiple', function (assert) {
 
   var data = new ArrayData($select, arrayOptions);
 
-  var container = new MockContainer();
-  data.bind(container, $('<div></div>'));
-
   data.current(function (val) {
     assert.equal(
       val.length,
@@ -112,9 +106,6 @@ test('current works with existing selections', function (assert) {
   var $select = $('#qunit-fixture .multiple');
 
   var data = new ArrayData($select, arrayOptions);
-
-  var container = new MockContainer();
-  data.bind(container, $('<div></div>'));
 
   $select.val(['One']);
 
@@ -145,9 +136,6 @@ test('current works with selected data', function (assert) {
   var $select = $('#qunit-fixture .single-empty');
 
   var data = new ArrayData($select, arrayOptions);
-
-  var container = new MockContainer();
-  data.bind(container, $('<div></div>'));
 
   data.select({
     id: '2',
@@ -182,9 +170,6 @@ test('select works for single', function (assert) {
 
   var data = new ArrayData($select, arrayOptions);
 
-  var container = new MockContainer();
-  data.bind(container, $('<div></div>'));
-
   assert.equal(
     $select.val(),
     'default',
@@ -208,13 +193,7 @@ test('multiple sets the value', function (assert) {
 
   var data = new ArrayData($select, arrayOptions);
 
-  var container = new MockContainer();
-  data.bind(container, $('<div></div>'));
-
-  assert.ok(
-    $select.val() == null || $select.val().length == 0,
-    'nothing should be selected'
-  );
+  assert.equal($select.val(), null);
 
   data.select({
     id: 'default',
@@ -228,9 +207,6 @@ test('multiple adds to the old value', function (assert) {
   var $select = $('#qunit-fixture .multiple');
 
   var data = new ArrayData($select, arrayOptions);
-
-  var container = new MockContainer();
-  data.bind(container, $('<div></div>'));
 
   $select.val(['One']);
 
@@ -249,9 +225,6 @@ test('option tags are automatically generated', function (assert) {
 
   var data = new ArrayData($select, arrayOptions);
 
-  var container = new MockContainer();
-  data.bind(container, $('<div></div>'));
-
   assert.equal(
     $select.find('option').length,
     4,
@@ -259,31 +232,10 @@ test('option tags are automatically generated', function (assert) {
   );
 });
 
-test('automatically generated option tags have a result id', function (assert) {
-  var $select = $('#qunit-fixture .single-empty');
-
-  var data = new ArrayData($select, arrayOptions);
-
-  var container = new MockContainer();
-  data.bind(container, $('<div></div>'));
-
-  data.select({
-    id: 'default'
-  });
-
-  assert.ok(
-    Utils.GetData($select.find(':selected')[0], 'data')._resultId,
-    '<option> default should have a result ID assigned'
-  );
-});
-
 test('option tags can receive new data', function(assert) {
   var $select = $('#qunit-fixture .single');
 
   var data = new ArrayData($select, extraOptions);
-
-  var container = new MockContainer();
-  data.bind(container, $('<div></div>'));
 
   assert.equal(
     $select.find('option').length,
@@ -315,9 +267,6 @@ test('optgroup tags can also be generated', function (assert) {
 
   var data = new ArrayData($select, nestedOptions);
 
-  var container = new MockContainer();
-  data.bind(container, $('<div></div>'));
-
   assert.equal(
     $select.find('option').length,
     1,
@@ -335,9 +284,6 @@ test('optgroup tags have the right properties', function (assert) {
   var $select = $('#qunit-fixture .single-empty');
 
   var data = new ArrayData($select, nestedOptions);
-
-  var container = new MockContainer();
-  data.bind(container, $('<div></div>'));
 
   var $group = $select.children('optgroup');
 
@@ -378,9 +324,6 @@ test('existing selections are respected on initialization', function (assert) {
     assert.equal($select.val(), 'Second');
 
     var data = new ArrayData($select, options);
-
-    var container = new MockContainer();
-    data.bind(container, $('<div></div>'));
 
     assert.equal($select.val(), 'Second');
 });

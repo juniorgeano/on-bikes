@@ -4380,7 +4380,7 @@ tbody.collapse.in {
   position: relative;
   z-index: 2;
   float: left;
-  width: 95%;
+  width: 100%;
   margin-bottom: 0;
 }
 

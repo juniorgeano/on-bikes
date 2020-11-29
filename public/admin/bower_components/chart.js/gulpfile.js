@@ -39,8 +39,7 @@ function run(bin, args, done) {
   return new Promise(function(resolve, reject) {
     var exe = '"' + process.execPath + '"';
     var src = require.resolve(bin);
-    var cmd = [exe, src].concat(args || []).join(' ');
-    var ps = exec(cmd);
+    var ps = exec([exe, src].concat(args || []).join(' '));
 
     ps.stdout.pipe(process.stdout);
     ps.stderr.pipe(process.stderr);
@@ -81,7 +80,7 @@ function bowerTask() {
 }
 
 function buildTask() {
-  return run('rollup/dist/bin/rollup', ['-c', argv.watch ? '--watch' : '']);
+  return run('rollup/bin/rollup', ['-c', argv.watch ? '--watch' : '']);
 }
 
 function packageTask() {

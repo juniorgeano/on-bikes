@@ -115,12 +115,9 @@ module.exports = {
 	 * is called with `context` as first argument and the result becomes the new input.
 	 * @param {number} [index] - If defined and the current value is an array, the value
 	 * at `index` become the new input.
-	 * @param {object} [info] - object to return information about resolution in
-	 * @param {boolean} [info.cacheable] - Will be set to `false` if option is not cacheable.
 	 * @since 2.7.0
 	 */
-	resolve: function(inputs, context, index, info) {
-		var cacheable = true;
+	resolve: function(inputs, context, index) {
 		var i, ilen, value;
 
 		for (i = 0, ilen = inputs.length; i < ilen; ++i) {
@@ -130,16 +127,11 @@ module.exports = {
 			}
 			if (context !== undefined && typeof value === 'function') {
 				value = value(context);
-				cacheable = false;
 			}
 			if (index !== undefined && helpers.isArray(value)) {
 				value = value[index];
-				cacheable = false;
 			}
 			if (value !== undefined) {
-				if (info && !cacheable) {
-					info.cacheable = false;
-				}
 				return value;
 			}
 		}

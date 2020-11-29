@@ -6,71 +6,26 @@ var elements = require('../elements/index');
 var helpers = require('../helpers/index');
 
 var valueOrDefault = helpers.valueOrDefault;
+var resolve = helpers.options.resolve;
 
 defaults._set('radar', {
-	spanGaps: false,
 	scale: {
 		type: 'radialLinear'
 	},
 	elements: {
 		line: {
-			fill: 'start',
 			tension: 0 // no bezier in radar
 		}
 	}
 });
 
 module.exports = DatasetController.extend({
+
 	datasetElementType: elements.Line,
 
 	dataElementType: elements.Point,
 
 	linkScales: helpers.noop,
-
-	/**
-	 * @private
-	 */
-	_datasetElementOptions: [
-		'backgroundColor',
-		'borderWidth',
-		'borderColor',
-		'borderCapStyle',
-		'borderDash',
-		'borderDashOffset',
-		'borderJoinStyle',
-		'fill'
-	],
-
-	/**
-	 * @private
-	 */
-	_dataElementOptions: {
-		backgroundColor: 'pointBackgroundColor',
-		borderColor: 'pointBorderColor',
-		borderWidth: 'pointBorderWidth',
-		hitRadius: 'pointHitRadius',
-		hoverBackgroundColor: 'pointHoverBackgroundColor',
-		hoverBorderColor: 'pointHoverBorderColor',
-		hoverBorderWidth: 'pointHoverBorderWidth',
-		hoverRadius: 'pointHoverRadius',
-		pointStyle: 'pointStyle',
-		radius: 'pointRadius',
-		rotation: 'pointRotation'
-	},
-
-	/**
-	 * @private
-	 */
-	_getIndexScaleId: function() {
-		return this.chart.scale.id;
-	},
-
-	/**
-	 * @private
-	 */
-	_getValueScaleId: function() {
-		return this.chart.scale.id;
-	},
 
 	update: function(reset) {
 		var me = this;
@@ -78,12 +33,12 @@ module.exports = DatasetController.extend({
 		var line = meta.dataset;
 		var points = meta.data || [];
 		var scale = me.chart.scale;
-		var config = me._config;
+		var dataset = me.getDataset();
 		var i, ilen;
 
 		// Compatibility: If the properties are defined with only the old name, use those values
-		if (config.tension !== undefined && config.lineTension === undefined) {
-			config.lineTension = config.tension;
+		if ((dataset.tension !== undefined) && (dataset.lineTension === undefined)) {
+			dataset.lineTension = dataset.tension;
 		}
 
 		// Utility
@@ -93,7 +48,7 @@ module.exports = DatasetController.extend({
 		line._children = points;
 		line._loop = true;
 		// Model
-		line._model = me._resolveDatasetElementOptions(line);
+		line._model = me._resolveLineOptions(line);
 
 		line.pivot();
 
@@ -117,7 +72,7 @@ module.exports = DatasetController.extend({
 		var dataset = me.getDataset();
 		var scale = me.chart.scale;
 		var pointPosition = scale.getPointPositionForValue(index, dataset.data[index]);
-		var options = me._resolveDataElementOptions(point, index);
+		var options = me._resolvePointOptions(point, index);
 		var lineModel = me.getMeta().dataset._model;
 		var x = reset ? scale.xCenter : pointPosition.x;
 		var y = reset ? scale.yCenter : pointPosition.y;
@@ -150,14 +105,84 @@ module.exports = DatasetController.extend({
 	/**
 	 * @private
 	 */
-	_resolveDatasetElementOptions: function() {
+	_resolvePointOptions: function(element, index) {
 		var me = this;
-		var config = me._config;
-		var options = me.chart.options;
-		var values = DatasetController.prototype._resolveDatasetElementOptions.apply(me, arguments);
+		var chart = me.chart;
+		var dataset = chart.data.datasets[me.index];
+		var custom = element.custom || {};
+		var options = chart.options.elements.point;
+		var values = {};
+		var i, ilen, key;
 
-		values.spanGaps = valueOrDefault(config.spanGaps, options.spanGaps);
-		values.tension = valueOrDefault(config.lineTension, options.elements.line.tension);
+		// Scriptable options
+		var context = {
+			chart: chart,
+			dataIndex: index,
+			dataset: dataset,
+			datasetIndex: me.index
+		};
+
+		var ELEMENT_OPTIONS = {
+			backgroundColor: 'pointBackgroundColor',
+			borderColor: 'pointBorderColor',
+			borderWidth: 'pointBorderWidth',
+			hitRadius: 'pointHitRadius',
+			hoverBackgroundColor: 'pointHoverBackgroundColor',
+			hoverBorderColor: 'pointHoverBorderColor',
+			hoverBorderWidth: 'pointHoverBorderWidth',
+			hoverRadius: 'pointHoverRadius',
+			pointStyle: 'pointStyle',
+			radius: 'pointRadius',
+			rotation: 'pointRotation'
+		};
+		var keys = Object.keys(ELEMENT_OPTIONS);
+
+		for (i = 0, ilen = keys.length; i < ilen; ++i) {
+			key = keys[i];
+			values[key] = resolve([
+				custom[key],
+				dataset[ELEMENT_OPTIONS[key]],
+				dataset[key],
+				options[key]
+			], context, index);
+		}
+
+		return values;
+	},
+
+	/**
+	 * @private
+	 */
+	_resolveLineOptions: function(element) {
+		var me = this;
+		var chart = me.chart;
+		var dataset = chart.data.datasets[me.index];
+		var custom = element.custom || {};
+		var options = chart.options.elements.line;
+		var values = {};
+		var i, ilen, key;
+
+		var keys = [
+			'backgroundColor',
+			'borderWidth',
+			'borderColor',
+			'borderCapStyle',
+			'borderDash',
+			'borderDashOffset',
+			'borderJoinStyle',
+			'fill'
+		];
+
+		for (i = 0, ilen = keys.length; i < ilen; ++i) {
+			key = keys[i];
+			values[key] = resolve([
+				custom[key],
+				dataset[key],
+				options[key]
+			]);
+		}
+
+		values.tension = valueOrDefault(dataset.lineTension, options.tension);
 
 		return values;
 	},
@@ -168,13 +193,6 @@ module.exports = DatasetController.extend({
 		var area = me.chart.chartArea;
 		var points = meta.data || [];
 		var i, ilen, model, controlPoints;
-
-		// Only consider points that are drawn in case the spanGaps option is used
-		if (meta.dataset._model.spanGaps) {
-			points = points.filter(function(pt) {
-				return !pt._model.skip;
-			});
-		}
 
 		function capControlPoint(pt, min, max) {
 			return Math.max(Math.min(pt, max), min);
