@@ -8,7 +8,10 @@ var emails = require("./../inc/emails")
 var clientes = require("./../inc/clients")
 var moment = require("moment");
 var router = express.Router();
+var jwt = require("jsonwebtoken");
 
+const SECRET = 'jpbgermano';
+const blacklist = [];
 
 
 module.exports = function(io){
@@ -17,7 +20,7 @@ module.exports = function(io){
 
     router.use(function(req, res, next){
 
-            next();
+        next();
 
     });
     
@@ -29,13 +32,7 @@ module.exports = function(io){
     
     });
     
-    router.get("/logout", function(req, res, next) {
-    
-        res.redirect("/admin/login");
-    
-    });
-    
-    router.get("/", function(req, res, next) {
+    router.get("/", verifyJWT, function(req, res, next) {
     
         admin.dashboard().then(data => {
     
@@ -48,16 +45,16 @@ module.exports = function(io){
      });
     
     });
+
+   
+    router.get("/logout", function(req, res, next) {
     
-    router.get("/dashboard", function(req, res, next) {
-    
-        reservations.dashboard().then(data=>{
-    
-            res.send(data);
-    
-        });
+        //blacklist.push(req.headers['x-access-token']);
+        res.redirect("/admin/login");
     
     });
+
+    
     
     router.post("/login", function(req, res, next) {
     
@@ -68,16 +65,45 @@ module.exports = function(io){
         } else {
             users.login(req.body.email, req.body.password).then(user => {
     
-                //req.session.user = user;
-    
+                jwt.sign({
+                    id: user.id,
+                }, SECRET, { expiresIn: 60 } );
+
+                
+
                 res.redirect("/admin");
-    
+
             }).catch(err => {
                 users.render(req, res, err.message  || err);
             });
+
         }
     
     });
+
+
+    function verifyJWT(req, res, next){
+
+        const token = req.headers['x-access-token'];
+        //const index = blacklist.findIndex(item => item = token);
+
+        jwt.verify(token, SECRET, (err, decoded) => {
+            if(err) res.redirect("/admin/login"); console.log({ auth: true, token: token });
+
+            req.id = decoded.id;
+
+            console.log(token);
+
+            next();
+        })
+
+    }
+    
+
+
+    
+
+
     
     router.get("/login", function(req, res, next) {
     
@@ -85,6 +111,20 @@ module.exports = function(io){
     
     });
     
+
+    router.get("/dashboard", function(req, res, next) {
+    
+        reservations.dashboard().then(data=>{
+    
+            res.send(data);
+    
+        });
+    
+    });
+
+   
+
+
     router.get("/contacts", function(req, res, next) {
         
         contacts.getContacts().then(data=>{
@@ -293,7 +333,7 @@ module.exports = function(io){
 
 
 
-    router.get("/clientes", function(req, res, next) {
+    router.get("/clientes", verifyJWT, function(req, res, next) {
     
         let start = (req.query.start) ? req.query.start : moment().subtract(1, "year").format("YYYY-MM-DD");
         let end = (req.query.end) ? req.query.end : moment().format("YYYY-MM-DD");

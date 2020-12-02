@@ -57,6 +57,7 @@ var adminRouter = require('./routes/admin')(io);
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
+
 /*
 app.use(session({
   store: new RedisStore({
