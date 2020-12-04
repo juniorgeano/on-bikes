@@ -6,7 +6,7 @@ const connection = mysql.createPool({
   host: 'mysql741.umbler.com',
   port: 41890,
   user: 'onbikes',
-  database: 'on-bikes',
+  database: 'onbikes',
   password: '18061987Jr',
   multipleStatements: true,
   waitForConnections: true,
