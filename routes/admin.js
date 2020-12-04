@@ -8,13 +8,18 @@ var emails = require("./../inc/emails")
 var clientes = require("./../inc/clients")
 var moment = require("moment");
 var router = express.Router();
-var jwt = require("jsonwebtoken");
+var JWT = require('jsonwebtoken');
 
-const SECRET = 'jpbgermano';
-const blacklist = [];
+const secret = "jpbgermano";
 
+if (typeof localStorage === "undefined" || localStorage === null) {
+    var LocalStorage = require('node-localstorage').LocalStorage;
+    localStorage = new LocalStorage('./scratch');
+  }
 
 module.exports = function(io){
+
+    
 
     moment.locale("PT-BR");
 
@@ -31,31 +36,12 @@ module.exports = function(io){
         next();
     
     });
-    
-    router.get("/", verifyJWT, function(req, res, next) {
-    
-        admin.dashboard().then(data => {
-    
-        res.render("admin/index", admin.getParams(req, {
-            data
-        }));
-    
-     }).catch(err => {
-         console.error(err);
-     });
-    
-    });
 
-   
-    router.get("/logout", function(req, res, next) {
-    
-        //blacklist.push(req.headers['x-access-token']);
-        res.redirect("/admin/login");
-    
-    });
 
-    
-    
+
+
+
+
     router.post("/login", function(req, res, next) {
     
         if (!req.body.email) {
@@ -65,44 +51,101 @@ module.exports = function(io){
         } else {
             users.login(req.body.email, req.body.password).then(user => {
     
-                jwt.sign({
-                    id: user.id,
-                }, SECRET, { expiresIn: 60 } );
+                                 
+               token = JWT.sign({ 
+                   userID: user.id, 
+                   email: user.email, 
+                   name: user.name 
+                }, 'abcdef', { algorithm: 'HS256',  expiresIn: 3000 }, function(err, token) {
 
+                 if(err){
+                      throw new Error('ERR_INVALID_TOKEN');
+                  } 
+                  
+                  localStorage.setItem('myFirstKey', token);
+                  
+               }); 
+
+               
                 
-
-                res.redirect("/admin");
-
+                
             }).catch(err => {
                 users.render(req, res, err.message  || err);
             });
+
+            
+            res.redirect("/admin/");
 
         }
     
     });
 
 
-    function verifyJWT(req, res, next){
+    router.get("/", verifyJWT, function(req, res, next) {
+        
+        var token = localStorage.getItem('myFirstKey');;
+        user = JWT.verify(token, 'abcdef')
 
-        const token = req.headers['x-access-token'];
-        //const index = blacklist.findIndex(item => item = token);
+        
+        admin.dashboard().then(data => {
+    
+        res.render("admin/index", admin.getParams(req, {
+            data,
+            user
+        }));
 
-        jwt.verify(token, SECRET, (err, decoded) => {
-            if(err) res.redirect("/admin/login"); console.log({ auth: true, token: token });
+        console.log(user);
+        
 
-            req.id = decoded.id;
+     }).catch(err => {
+         console.error(err);
+     });
+    
+    });
 
-            console.log(token);
-
-            next();
-        })
-
-    }
+    
     
 
+   
+
+
+    router.get("/logout", function(req, res, next) {
+    
+        localStorage.removeItem('myFirstKey');
+        res.redirect("/admin/login");
+    
+    });
+
+
+
+
+    function verifyJWT(req, res, next){ 
+        var token = localStorage.getItem('myFirstKey');; 
+        if (!token) 
+
+            res.redirect("/admin/login"); 
+        
+            JWT.verify(token, 'abcdef', function(err, decoded) { 
+            if (err) 
+            res.redirect("/admin/login"); 
+            
+            console.log("User Id: " + decoded.userID)
+            console.log(localStorage.getItem('myFirstKey'));
+            next(); 
+        }); 
+    }    
 
     
+    
 
+   
+    
+
+    
+    
+    
+
+   
 
     
     router.get("/login", function(req, res, next) {
@@ -112,7 +155,7 @@ module.exports = function(io){
     });
     
 
-    router.get("/dashboard", function(req, res, next) {
+    router.get("/dashboard", verifyJWT, function(req, res, next) {
     
         reservations.dashboard().then(data=>{
     
@@ -125,7 +168,7 @@ module.exports = function(io){
    
 
 
-    router.get("/contacts", function(req, res, next) {
+    router.get("/contacts", verifyJWT, function(req, res, next) {
         
         contacts.getContacts().then(data=>{
     
@@ -279,7 +322,7 @@ module.exports = function(io){
         });
     });
     
-    router.post("/users", function(req, res, next) {
+    router.post("/users", verifyJWT, function(req, res, next) {
     
         users.save(req.fields).then(results => {
             io.emit('dashboard update');
@@ -339,7 +382,7 @@ module.exports = function(io){
         let end = (req.query.end) ? req.query.end : moment().format("YYYY-MM-DD");
     
         clientes.getClientes(req).then(pag => {
-    
+            
             res.render("admin/clientes", admin.getParams(req, {
                 date: {
                     start,
