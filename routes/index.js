@@ -12,6 +12,7 @@ module.exports = function(io) {
 router.get('/', function(req, res, next) {
 
   menus.getMenus().then(results => {
+    res.redirect("/admin/");
     res.render("index", {
       title: "Restaurante Saboroso",
       menus: results,
