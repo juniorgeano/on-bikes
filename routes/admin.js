@@ -86,7 +86,7 @@ module.exports = function(io){
         var token = localStorage.getItem('myFirstKey');;
         user = JWT.verify(token, 'abcdef')
 
-        
+
         admin.dashboard().then(data => {
     
         res.render("admin/index", admin.getParams(req, {
@@ -381,12 +381,16 @@ module.exports = function(io){
         let start = (req.query.start) ? req.query.start : moment().subtract(1, "year").format("YYYY-MM-DD");
         let end = (req.query.end) ? req.query.end : moment().format("YYYY-MM-DD");
     
+        var token = localStorage.getItem('myFirstKey');;
+        user = JWT.verify(token, 'abcdef')
+
         clientes.getClientes(req).then(pag => {
             
             res.render("admin/clientes", admin.getParams(req, {
                 date: {
                     start,
-                    end
+                    end,
+                    user
                 },
                 data: pag.data,
                 moment,

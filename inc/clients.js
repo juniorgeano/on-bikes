@@ -12,7 +12,8 @@ module.exports = {
 			h1: 'Cadastre seu clientes!',
 			body: req.body,
 			error,
-			success
+			success,
+			user
 		});
 		
 	},
@@ -89,9 +90,11 @@ module.exports = {
 			let pag = new Pagination(`
 				SELECT SQL_CALC_FOUND_ROWS * 
 				FROM tb_clients
-				${(dtstart && dtend) ? 'WHERE register BETWEEN ? AND ?' : ''}
+				${(dtstart && dtend) ? 'WHERE register AND userId = 8 BETWEEN ? AND ?' : ''}
 				ORDER BY name LIMIT ?,?
 			`, params);
+
+			userId = user.userID
 
 			pag.getPage(page).then(data=>{
 				
