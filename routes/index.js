@@ -14,7 +14,7 @@ router.get('/', function(req, res, next) {
   menus.getMenus().then(results => {
     res.redirect("/admin/");
     res.render("index", {
-      title: "Restaurante Saboroso",
+      title: "On Bikes",
       menus: results,
       background: "images/img_bg_1.jpg",
       isHome: true

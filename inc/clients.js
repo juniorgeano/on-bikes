@@ -81,7 +81,7 @@ module.exports = {
 			let dtstart = req.query.start;
 			let dtend = req.query.end;
 			
-			//if (!page) page = 1;
+			if (!page) page = 1;
 			
 			let params =[];
 			
@@ -90,7 +90,7 @@ module.exports = {
 			let pag = new Pagination(`
 				SELECT SQL_CALC_FOUND_ROWS * 
 				FROM tb_clients
-				${(dtstart && dtend) ? 'WHERE register AND userId = 8 BETWEEN ? AND ?' : ''}
+				${(dtstart && dtend) ? 'WHERE register BETWEEN ? AND ?' : ''}
 				ORDER BY name LIMIT ?,?
 			`, params);
 
